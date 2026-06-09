@@ -5,27 +5,31 @@ the same kernel AST (enabling program-cache hits after the first compile).
 """
 from collections.abc import Callable
 
-def _tinygrad():
+def _f32():
+  from tinygrad import dtypes
+  return dtypes.float32
+
+def _tinygrad(dtype=None):
   from tinygrad import Tensor, dtypes
-  return Tensor, dtypes.float16
+  return Tensor, (dtypes.float16 if dtype is None else dtype)
 
 
-def _matmul(M: int, K: int, N: int):
-  Tensor, dtype = _tinygrad()
+def _matmul(M: int, K: int, N: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   a = Tensor.randn(M, K, dtype=dtype).realize()
   b = Tensor.randn(K, N, dtype=dtype).realize()
   return lambda: a @ b
 
 
-def _conv2d(N: int, C_in: int, H: int, W: int, C_out: int, kH: int, kW: int):
-  Tensor, dtype = _tinygrad()
+def _conv2d(N: int, C_in: int, H: int, W: int, C_out: int, kH: int, kW: int, stride: int = 1, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, C_in, H, W, dtype=dtype).realize()
   w = Tensor.randn(C_out, C_in, kH, kW, dtype=dtype).realize()
-  return lambda: x.conv2d(w)
+  return lambda: x.conv2d(w, stride=stride)
 
 
-def _attention(B: int, heads: int, seq: int, head_dim: int):
-  Tensor, dtype = _tinygrad()
+def _attention(B: int, heads: int, seq: int, head_dim: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   q = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
   k = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
   v = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
@@ -36,24 +40,42 @@ def _attention(B: int, heads: int, seq: int, head_dim: int):
   return attn
 
 
-def _elementwise(N: int, M: int):
-  Tensor, dtype = _tinygrad()
+def _elementwise(N: int, M: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, M, dtype=dtype).realize()
   return lambda: x.relu()
 
 
-def _reduction(N: int, M: int):
-  Tensor, dtype = _tinygrad()
+def _elementwise_gelu(N: int, M: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
+  x = Tensor.randn(N, M, dtype=dtype).realize()
+  return lambda: x.gelu()
+
+
+def _elementwise_silu(N: int, M: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
+  x = Tensor.randn(N, M, dtype=dtype).realize()
+  return lambda: x.silu()
+
+
+def _reduction(N: int, M: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, M, dtype=dtype).realize()
   return lambda: x.sum()
 
 
-def _layer_norm(N: int, D: int):
-  Tensor, dtype = _tinygrad()
+def _layer_norm(N: int, D: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, D, dtype=dtype).realize()
   w = Tensor.randn(D, dtype=dtype).realize()
   b = Tensor.randn(D, dtype=dtype).realize()
   return lambda: x.layernorm().mul(w).add(b)
+
+
+def _rms_norm(N: int, D: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
+  x = Tensor.randn(N, D, dtype=dtype).realize()
+  return lambda: x * (x.pow(2).mean(-1, keepdim=True) + 1e-5).rsqrt()
 
 
 # ---------------------------------------------------------------------------
@@ -128,20 +150,20 @@ def _llama_block(seq: int, hidden: int, heads: int, kv_heads: int, ffn_dim: int)
   return block
 
 
-def _depthwise_sep_conv(N: int, C: int, H: int, W: int, C_out: int):
+def _depthwise_sep_conv(N: int, C: int, H: int, W: int, C_out: int, dtype=None):
   """Depthwise-separable convolution as used in MobileNet/EfficientNet.
   Two fused kernels: depthwise 3×3 (groups=C) then pointwise 1×1."""
-  Tensor, dtype = _tinygrad()
+  Tensor, dtype = _tinygrad(dtype)
   x  = Tensor.randn(N, C, H, W, dtype=dtype).realize()
   dw = Tensor.randn(C, 1, 3, 3, dtype=dtype).realize()   # depthwise
   pw = Tensor.randn(C_out, C, 1, 1, dtype=dtype).realize()  # pointwise
   return lambda: x.conv2d(dw, groups=C).conv2d(pw)
 
 
-def _causal_attention(B: int, heads: int, seq: int, head_dim: int):
+def _causal_attention(B: int, heads: int, seq: int, head_dim: int, dtype=None):
   """Scaled dot-product attention with a causal (lower-triangular) mask,
   as used in decoder-only models (GPT, LLaMA inference)."""
-  Tensor, dtype = _tinygrad()
+  Tensor, dtype = _tinygrad(dtype)
   q     = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
   k     = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
   v     = Tensor.randn(B, heads, seq, head_dim, dtype=dtype).realize()
@@ -164,10 +186,14 @@ def _causal_attention(B: int, heads: int, seq: int, head_dim: int):
 OpFactory = Callable[[], Callable]
 
 MATMUL_OPS: dict[str, OpFactory] = {
-  "matmul_1024": lambda: _matmul(1024, 1024, 1024),
-  "matmul_2048": lambda: _matmul(2048, 2048, 2048),
-  "matmul_8192": lambda: _matmul(8192, 8192, 8192),
-  "matmul_16384": lambda: _matmul(16384, 16384, 16384),
+  "matmul_1024":           lambda: _matmul(1024, 1024, 1024),
+  "matmul_2048":           lambda: _matmul(2048, 2048, 2048),
+  "matmul_4096":           lambda: _matmul(4096, 4096, 4096),
+  "matmul_8192":           lambda: _matmul(8192, 8192, 8192),
+  "matmul_16384":          lambda: _matmul(16384, 16384, 16384),
+  "matmul_4096_f32":       lambda: _matmul(4096, 4096, 4096, dtype=_f32()),
+  "matmul_ffn_4096_16384": lambda: _matmul(2048, 4096, 16384),
+  "matmul_ffn_16384_4096": lambda: _matmul(2048, 16384, 4096),
 }
 
 VANILLA_ATTENTION_OPS: dict[str, OpFactory] = {
@@ -176,16 +202,33 @@ VANILLA_ATTENTION_OPS: dict[str, OpFactory] = {
 }
 
 SINGLE_LAYER_CONVOLUTION_OPS: dict[str, OpFactory] = {
-  "conv_small":  lambda: _conv2d(1, 32, 32, 32, 64, 3, 3),
-  "conv_medium": lambda: _conv2d(1, 64, 64, 64, 128, 3, 3),
-  "conv_large":  lambda: _conv2d(1, 128, 128, 128, 256, 3, 3),
-  "conv_xlarge": lambda: _conv2d(1, 256, 128, 128, 512, 3, 3),
+  "conv_small":      lambda: _conv2d(1, 32, 32, 32, 64, 3, 3),
+  "conv_medium":     lambda: _conv2d(1, 64, 64, 64, 128, 3, 3),
+  "conv_large":      lambda: _conv2d(1, 128, 128, 128, 256, 3, 3),
+  "conv_xlarge":     lambda: _conv2d(1, 256, 128, 128, 512, 3, 3),
+  "conv_1x1_large":  lambda: _conv2d(1, 256, 56, 56, 256, 1, 1),
+  "conv_strided":    lambda: _conv2d(1, 64, 56, 56, 128, 3, 3, stride=2),
 }
 
+ELEMENTWISE_OPS: dict[str, OpFactory] = {
+  "relu_large":          lambda: _elementwise(4096, 4096),
+  "gelu_large":          lambda: _elementwise_gelu(4096, 4096),
+  "silu_large":          lambda: _elementwise_silu(4096, 4096),
+}
+
+REDUCTION_NORM_OPS: dict[str, OpFactory] = {
+  "reduce_large":        lambda: _reduction(4096, 4096),
+  "reduce_large_f32":    lambda: _reduction(4096, 4096, dtype=_f32()),
+  "layernorm_512":       lambda: _layer_norm(512, 1024),
+  "layernorm_512_f32":   lambda: _layer_norm(512, 1024, dtype=_f32()),
+  "rmsnorm_large":       lambda: _rms_norm(2048, 4096),
+  "rmsnorm_large_f32":   lambda: _rms_norm(2048, 4096, dtype=_f32()),
+}
+
+# kept for backward compatibility with existing benchmark scripts
 ATTENTION_RELATED_BLOCK_OPS: dict[str, OpFactory] = {
-  "relu_large":    lambda: _elementwise(4096, 4096),
-  "reduce_large":  lambda: _reduction(4096, 4096),
-  "layernorm_512": lambda: _layer_norm(512, 1024),
+  **ELEMENTWISE_OPS,
+  **REDUCTION_NORM_OPS,
 }
 
 LARGER_CONVOLUTION_MODULE_OPS: dict[str, OpFactory] = {
@@ -200,8 +243,9 @@ LARGER_TRANSFORMER_BLOCK_OPS: dict[str, OpFactory] = {
   "llama_block_1024": lambda: _llama_block(seq=1024, hidden=3072, heads=24, kv_heads=8, ffn_dim=8192),
   "llama_block_2048": lambda: _llama_block(seq=2048, hidden=4096, heads=32, kv_heads=8, ffn_dim=11008),
   # "causal_attn_512": lambda: _causal_attention(B=1, heads=8, seq=512, head_dim=64),
-  "causal_attn_1024": lambda: _causal_attention(B=1, heads=16, seq=1024, head_dim=64),
-  "causal_attn_2048": lambda: _causal_attention(B=1, heads=32, seq=2048, head_dim=64),
+  "causal_attn_1024":   lambda: _causal_attention(B=1, heads=16, seq=1024, head_dim=64),
+  "causal_attn_2048":   lambda: _causal_attention(B=1, heads=32, seq=2048, head_dim=64),
+  "causal_attn_decode": lambda: _causal_attention(B=1, heads=32, seq=1, head_dim=128),
 }
 
 def _merge_suites(*suites: dict[str, OpFactory]) -> dict[str, OpFactory]:
@@ -210,10 +254,12 @@ def _merge_suites(*suites: dict[str, OpFactory]) -> dict[str, OpFactory]:
   return merged
 
 BENCHMARK_SUITES: dict[str, dict[str, OpFactory]] = {
-  "matmuls": MATMUL_OPS,
-  "vanilla_attentions": VANILLA_ATTENTION_OPS,
+  "matmuls":                   MATMUL_OPS,
+  "vanilla_attentions":        VANILLA_ATTENTION_OPS,
   "single_layer_convolutions": SINGLE_LAYER_CONVOLUTION_OPS,
-  "attention_related_blocks": ATTENTION_RELATED_BLOCK_OPS,
+  "elementwise":               ELEMENTWISE_OPS,
+  "reduction_norm":            REDUCTION_NORM_OPS,
+  "attention_related_blocks":  ATTENTION_RELATED_BLOCK_OPS,  # backward compat
   "larger_convolution_modules": LARGER_CONVOLUTION_MODULE_OPS,
   "larger_transformer_blocks": LARGER_TRANSFORMER_BLOCK_OPS,
 }
@@ -221,13 +267,15 @@ BENCHMARK_SUITES["default"] = _merge_suites(
   MATMUL_OPS,
   SINGLE_LAYER_CONVOLUTION_OPS,
   VANILLA_ATTENTION_OPS,
-  ATTENTION_RELATED_BLOCK_OPS,
+  ELEMENTWISE_OPS,
+  REDUCTION_NORM_OPS,
 )
 BENCHMARK_SUITES["all"] = _merge_suites(
   MATMUL_OPS,
   VANILLA_ATTENTION_OPS,
   SINGLE_LAYER_CONVOLUTION_OPS,
-  ATTENTION_RELATED_BLOCK_OPS,
+  ELEMENTWISE_OPS,
+  REDUCTION_NORM_OPS,
   LARGER_CONVOLUTION_MODULE_OPS,
   LARGER_TRANSFORMER_BLOCK_OPS,
 )
