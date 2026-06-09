@@ -1,0 +1,17 @@
+# collected runtime data — can be large
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Model checkpoints
+model/checkpoints/
+
+# macOS
+.DS_Store
