@@ -1,0 +1,17 @@
+[project]
+name = "tinygrad-beam-search"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "tinygrad",
+]
+
+[tool.uv.workspace]
+members = [
+    "tinygrad",
+]
+
+[tool.uv.sources]
+tinygrad = { workspace = true, editable = true }

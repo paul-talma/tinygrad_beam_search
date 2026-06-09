@@ -1,0 +1,1102 @@
+{
+  "suite": "matmuls",
+  "ops": [
+    "matmul_1024",
+    "matmul_2048",
+    "matmul_8192",
+    "matmul_16384"
+  ],
+  "beams": [
+    0,
+    1,
+    2,
+    4,
+    8
+  ],
+  "n_exec": 10,
+  "n_warmup": 2,
+  "results": {
+    "matmul_1024": {
+      "0": {
+        "op": "matmul_1024",
+        "beam": 0,
+        "compile_and_execution_time_s": 0.06699045794084668,
+        "beam_search_time_s": 0,
+        "total_candidate_compile_time_s": 0,
+        "exec_time_s": 0.0020445832051336765,
+        "exec_time_min_s": 0.0019998750649392605,
+        "kernel_execution_time_s": 0.0006064791232347488,
+        "kernel_execution_time_min_s": 0.0006038332358002663,
+        "total_kernels": 1,
+        "depth_per_kernel": [],
+        "candidate_compile_time_per_kernel_s": [],
+        "executed_candidates_per_layer_per_kernel": [],
+        "total_candidates_per_layer_per_kernel": [],
+        "beam_kernels": [],
+        "n_exec": 10
+      },
+      "1": {
+        "op": "matmul_1024",
+        "beam": 1,
+        "compile_and_execution_time_s": 1.171467499807477,
+        "beam_search_time_s": 1.1300480416975915,
+        "total_candidate_compile_time_s": 1.7194671635515988,
+        "exec_time_s": 0.0027656876482069492,
+        "exec_time_min_s": 0.0018963753245770931,
+        "kernel_execution_time_s": 0.0014187914784997702,
+        "kernel_execution_time_min_s": 0.0004521249793469906,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          3
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          1.7194671635515988
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            24,
+            15,
+            15
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            25,
+            15,
+            15
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 1,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 1.1300480416975915,
+            "candidate_compile_time_s": 1.7194671635515988,
+            "depth": 3,
+            "executed_candidates_total": 54,
+            "executed_candidates_per_layer": [
+              24,
+              15,
+              15
+            ],
+            "total_candidates_per_layer": [
+              25,
+              15,
+              15
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "2": {
+        "op": "matmul_1024",
+        "beam": 2,
+        "compile_and_execution_time_s": 2.3551227911375463,
+        "beam_search_time_s": 2.010627374984324,
+        "total_candidate_compile_time_s": 5.456538420636207,
+        "exec_time_s": 0.002697187475860119,
+        "exec_time_min_s": 0.0026097502559423447,
+        "kernel_execution_time_s": 0.001319520641118288,
+        "kernel_execution_time_min_s": 0.0012562084011733532,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          4
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          5.456538420636207
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            24,
+            39,
+            30,
+            28
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            25,
+            39,
+            30,
+            30
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 2,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 2.010627374984324,
+            "candidate_compile_time_s": 5.456538420636207,
+            "depth": 4,
+            "executed_candidates_total": 121,
+            "executed_candidates_per_layer": [
+              24,
+              39,
+              30,
+              28
+            ],
+            "total_candidates_per_layer": [
+              25,
+              39,
+              30,
+              30
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "4": {
+        "op": "matmul_1024",
+        "beam": 4,
+        "compile_and_execution_time_s": 2.4674115842208266,
+        "beam_search_time_s": 2.4259548750706017,
+        "total_candidate_compile_time_s": 4.235830502118915,
+        "exec_time_s": 0.0021816669031977654,
+        "exec_time_min_s": 0.002061916049569845,
+        "kernel_execution_time_s": 0.0007144997362047434,
+        "kernel_execution_time_min_s": 0.0006516249850392342,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          3
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          4.235830502118915
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            24,
+            85,
+            60
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            25,
+            85,
+            60
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 4,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 2.4259548750706017,
+            "candidate_compile_time_s": 4.235830502118915,
+            "depth": 3,
+            "executed_candidates_total": 169,
+            "executed_candidates_per_layer": [
+              24,
+              85,
+              60
+            ],
+            "total_candidates_per_layer": [
+              25,
+              85,
+              60
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "8": {
+        "op": "matmul_1024",
+        "beam": 8,
+        "compile_and_execution_time_s": 6.156261917203665,
+        "beam_search_time_s": 6.082857542205602,
+        "total_candidate_compile_time_s": 17.311527454294264,
+        "exec_time_s": 0.0020777294412255287,
+        "exec_time_min_s": 0.0018659578636288643,
+        "kernel_execution_time_s": 0.0006217081099748611,
+        "kernel_execution_time_min_s": 0.0004302500747144222,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          4
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          17.311527454294264
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            24,
+            179,
+            94,
+            107
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            25,
+            181,
+            110,
+            115
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 8,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 6.082857542205602,
+            "candidate_compile_time_s": 17.311527454294264,
+            "depth": 4,
+            "executed_candidates_total": 404,
+            "executed_candidates_per_layer": [
+              24,
+              179,
+              94,
+              107
+            ],
+            "total_candidates_per_layer": [
+              25,
+              181,
+              110,
+              115
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=2)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      }
+    },
+    "matmul_2048": {
+      "0": {
+        "op": "matmul_2048",
+        "beam": 0,
+        "compile_and_execution_time_s": 0.1225593751296401,
+        "beam_search_time_s": 0,
+        "total_candidate_compile_time_s": 0,
+        "exec_time_s": 0.004678562516346574,
+        "exec_time_min_s": 0.0046430411748588085,
+        "kernel_execution_time_s": 0.0032224999740719795,
+        "kernel_execution_time_min_s": 0.0032210000790655613,
+        "total_kernels": 1,
+        "depth_per_kernel": [],
+        "candidate_compile_time_per_kernel_s": [],
+        "executed_candidates_per_layer_per_kernel": [],
+        "total_candidates_per_layer_per_kernel": [],
+        "beam_kernels": [],
+        "n_exec": 10
+      },
+      "1": {
+        "op": "matmul_2048",
+        "beam": 1,
+        "compile_and_execution_time_s": 3.795526333153248,
+        "beam_search_time_s": 3.6977254170924425,
+        "total_candidate_compile_time_s": 5.480390496086329,
+        "exec_time_s": 0.004674582974985242,
+        "exec_time_min_s": 0.004647666122764349,
+        "kernel_execution_time_s": 0.003198937512934208,
+        "kernel_execution_time_min_s": 0.0031948331743478775,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          5
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          5.480390496086329
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            15,
+            15,
+            14,
+            6
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            15,
+            15,
+            15,
+            11
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 1,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 3.6977254170924425,
+            "candidate_compile_time_s": 5.480390496086329,
+            "depth": 5,
+            "executed_candidates_total": 73,
+            "executed_candidates_per_layer": [
+              23,
+              15,
+              15,
+              14,
+              6
+            ],
+            "total_candidates_per_layer": [
+              24,
+              15,
+              15,
+              15,
+              11
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=16)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "2": {
+        "op": "matmul_2048",
+        "beam": 2,
+        "compile_and_execution_time_s": 5.823251124937087,
+        "beam_search_time_s": 5.717034582979977,
+        "total_candidate_compile_time_s": 10.37265079189092,
+        "exec_time_s": 0.0047124577686190605,
+        "exec_time_min_s": 0.004678083583712578,
+        "kernel_execution_time_s": 0.003219354199245572,
+        "kernel_execution_time_min_s": 0.0032172915525734425,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          5
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          10.37265079189092
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            39,
+            30,
+            29,
+            26
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            39,
+            30,
+            30,
+            30
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 2,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 5.717034582979977,
+            "candidate_compile_time_s": 10.37265079189092,
+            "depth": 5,
+            "executed_candidates_total": 147,
+            "executed_candidates_per_layer": [
+              23,
+              39,
+              30,
+              29,
+              26
+            ],
+            "total_candidates_per_layer": [
+              24,
+              39,
+              30,
+              30,
+              30
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=2)",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=2)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "4": {
+        "op": "matmul_2048",
+        "beam": 4,
+        "compile_and_execution_time_s": 10.50429549999535,
+        "beam_search_time_s": 10.39812899986282,
+        "total_candidate_compile_time_s": 18.267590196803212,
+        "exec_time_s": 0.00476749986410141,
+        "exec_time_min_s": 0.0047057499177753925,
+        "kernel_execution_time_s": 0.003198500256985426,
+        "kernel_execution_time_min_s": 0.0031973752193152905,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          5
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          18.267590196803212
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            85,
+            60,
+            58,
+            39
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            85,
+            60,
+            60,
+            55
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 4,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 10.39812899986282,
+            "candidate_compile_time_s": 18.267590196803212,
+            "depth": 5,
+            "executed_candidates_total": 265,
+            "executed_candidates_per_layer": [
+              23,
+              85,
+              60,
+              58,
+              39
+            ],
+            "total_candidates_per_layer": [
+              24,
+              85,
+              60,
+              60,
+              55
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "8": {
+        "op": "matmul_2048",
+        "beam": 8,
+        "compile_and_execution_time_s": 24.793728291988373,
+        "beam_search_time_s": 24.68234512535855,
+        "total_candidate_compile_time_s": 51.930927420500666,
+        "exec_time_s": 0.004736416507512331,
+        "exec_time_min_s": 0.0046922918409109116,
+        "kernel_execution_time_s": 0.0031985417008399963,
+        "kernel_execution_time_min_s": 0.003196416888386011,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          6
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          51.930927420500666
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            179,
+            99,
+            118,
+            103,
+            64
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            181,
+            114,
+            121,
+            119,
+            111
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 8,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 24.68234512535855,
+            "candidate_compile_time_s": 51.930927420500666,
+            "depth": 6,
+            "executed_candidates_total": 586,
+            "executed_candidates_per_layer": [
+              23,
+              179,
+              99,
+              118,
+              103,
+              64
+            ],
+            "total_candidates_per_layer": [
+              24,
+              181,
+              114,
+              121,
+              119,
+              111
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=2)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=3, arg=2)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      }
+    },
+    "matmul_8192": {
+      "0": {
+        "op": "matmul_8192",
+        "beam": 0,
+        "compile_and_execution_time_s": 0.2764421249739826,
+        "beam_search_time_s": 0,
+        "total_candidate_compile_time_s": 0,
+        "exec_time_s": 0.20875754160806537,
+        "exec_time_min_s": 0.20866287499666214,
+        "kernel_execution_time_s": 0.20693000010214746,
+        "kernel_execution_time_min_s": 0.2068384583108127,
+        "total_kernels": 1,
+        "depth_per_kernel": [],
+        "candidate_compile_time_per_kernel_s": [],
+        "executed_candidates_per_layer_per_kernel": [],
+        "total_candidates_per_layer_per_kernel": [],
+        "beam_kernels": [],
+        "n_exec": 10
+      },
+      "1": {
+        "op": "matmul_8192",
+        "beam": 1,
+        "compile_and_execution_time_s": 68.04058291623369,
+        "beam_search_time_s": 67.6198710417375,
+        "total_candidate_compile_time_s": 10.630328582134098,
+        "exec_time_s": 0.20445841667242348,
+        "exec_time_min_s": 0.20432562474161386,
+        "kernel_execution_time_s": 0.20255995821207762,
+        "kernel_execution_time_min_s": 0.2025422086007893,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          7
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          10.630328582134098
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            15,
+            15,
+            14,
+            12,
+            13,
+            11
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            15,
+            15,
+            15,
+            15,
+            15,
+            14
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 1,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 67.6198710417375,
+            "candidate_compile_time_s": 10.630328582134098,
+            "depth": 7,
+            "executed_candidates_total": 103,
+            "executed_candidates_per_layer": [
+              23,
+              15,
+              15,
+              14,
+              12,
+              13,
+              11
+            ],
+            "total_candidates_per_layer": [
+              24,
+              15,
+              15,
+              15,
+              15,
+              15,
+              14
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.UNROLL, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "2": {
+        "op": "matmul_8192",
+        "beam": 2,
+        "compile_and_execution_time_s": 140.52860333397985,
+        "beam_search_time_s": 140.07394312508404,
+        "total_candidate_compile_time_s": 27.692793500144035,
+        "exec_time_s": 0.20705900038592517,
+        "exec_time_min_s": 0.20619075000286102,
+        "kernel_execution_time_s": 0.20498464605771005,
+        "kernel_execution_time_min_s": 0.2043257080949843,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          8
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          27.692793500144035
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            39,
+            30,
+            28,
+            23,
+            25,
+            20,
+            13
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            39,
+            30,
+            30,
+            29,
+            29,
+            27,
+            26
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 2,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 140.07394312508404,
+            "candidate_compile_time_s": 27.692793500144035,
+            "depth": 8,
+            "executed_candidates_total": 201,
+            "executed_candidates_per_layer": [
+              23,
+              39,
+              30,
+              28,
+              23,
+              25,
+              20,
+              13
+            ],
+            "total_candidates_per_layer": [
+              24,
+              39,
+              30,
+              30,
+              29,
+              29,
+              27,
+              26
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 2, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.UNROLL, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "4": {
+        "op": "matmul_8192",
+        "beam": 4,
+        "compile_and_execution_time_s": 281.5197546253912,
+        "beam_search_time_s": 281.0454479162581,
+        "total_candidate_compile_time_s": 83.91612207097933,
+        "exec_time_s": 0.20633800025098026,
+        "exec_time_min_s": 0.20431287493556738,
+        "kernel_execution_time_s": 0.2035168542061001,
+        "kernel_execution_time_min_s": 0.20244383346289396,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          10
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          83.91612207097933
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            85,
+            60,
+            58,
+            39,
+            38,
+            25,
+            21,
+            15,
+            19
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            85,
+            60,
+            60,
+            54,
+            54,
+            53,
+            50,
+            48,
+            50
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 4,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 281.0454479162581,
+            "candidate_compile_time_s": 83.91612207097933,
+            "depth": 10,
+            "executed_candidates_total": 383,
+            "executed_candidates_per_layer": [
+              23,
+              85,
+              60,
+              58,
+              39,
+              38,
+              25,
+              21,
+              15,
+              19
+            ],
+            "total_candidates_per_layer": [
+              24,
+              85,
+              60,
+              60,
+              54,
+              54,
+              53,
+              50,
+              48,
+              50
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.UNROLL, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.LOCAL, axis=1, arg=2)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.SWAP, axis=0, arg=1)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "8": {
+        "op": "matmul_8192",
+        "beam": 8,
+        "compile_and_execution_time_s": 504.03344037523493,
+        "beam_search_time_s": 503.6399334589951,
+        "total_candidate_compile_time_s": 149.97265388304368,
+        "exec_time_s": 0.20434335456229746,
+        "exec_time_min_s": 0.2042565830051899,
+        "kernel_execution_time_s": 0.20244960440322757,
+        "kernel_execution_time_min_s": 0.20244562486186624,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          10
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          149.97265388304368
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            179,
+            89,
+            111,
+            78,
+            76,
+            56,
+            38,
+            34,
+            31
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            181,
+            108,
+            119,
+            108,
+            108,
+            106,
+            102,
+            99,
+            102
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 8,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 503.6399334589951,
+            "candidate_compile_time_s": 149.97265388304368,
+            "depth": 10,
+            "executed_candidates_total": 715,
+            "executed_candidates_per_layer": [
+              23,
+              179,
+              89,
+              111,
+              78,
+              76,
+              56,
+              38,
+              34,
+              31
+            ],
+            "total_candidates_per_layer": [
+              24,
+              181,
+              108,
+              119,
+              108,
+              108,
+              106,
+              102,
+              99,
+              102
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.UNROLL, axis=0, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.LOCAL, axis=1, arg=2)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)",
+              "Opt(op=OptOps.SWAP, axis=0, arg=1)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      }
+    },
+    "matmul_16384": {
+      "0": {
+        "op": "matmul_16384",
+        "beam": 0,
+        "compile_and_execution_time_s": 2.3107362906448543,
+        "beam_search_time_s": 0,
+        "total_candidate_compile_time_s": 0,
+        "exec_time_s": 1.828706270782277,
+        "exec_time_min_s": 1.7756657502613962,
+        "kernel_execution_time_s": 1.8263794162776321,
+        "kernel_execution_time_min_s": 1.7734974999912083,
+        "total_kernels": 1,
+        "depth_per_kernel": [],
+        "candidate_compile_time_per_kernel_s": [],
+        "executed_candidates_per_layer_per_kernel": [],
+        "total_candidates_per_layer_per_kernel": [],
+        "beam_kernels": [],
+        "n_exec": 10
+      },
+      "1": {
+        "op": "matmul_16384",
+        "beam": 1,
+        "compile_and_execution_time_s": 247.91299849981442,
+        "beam_search_time_s": 245.82846062490717,
+        "total_candidate_compile_time_s": 7.23118950240314,
+        "exec_time_s": 1.6160604166798294,
+        "exec_time_min_s": 1.6159021253697574,
+        "kernel_execution_time_s": 1.6141084167174995,
+        "kernel_execution_time_min_s": 1.6140634580515325,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          5
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          7.23118950240314
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            15,
+            15,
+            14,
+            12
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            15,
+            15,
+            15,
+            15
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 1,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 245.82846062490717,
+            "candidate_compile_time_s": 7.23118950240314,
+            "depth": 5,
+            "executed_candidates_total": 79,
+            "executed_candidates_per_layer": [
+              23,
+              15,
+              15,
+              14,
+              12
+            ],
+            "total_candidates_per_layer": [
+              24,
+              15,
+              15,
+              15,
+              15
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=2)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      },
+      "2": {
+        "op": "matmul_16384",
+        "beam": 2,
+        "compile_and_execution_time_s": 451.43392329104245,
+        "beam_search_time_s": 449.34399937465787,
+        "total_candidate_compile_time_s": 10.746817463077605,
+        "exec_time_s": 1.6162113335449249,
+        "exec_time_min_s": 1.6161612090654671,
+        "kernel_execution_time_s": 1.6142578125,
+        "kernel_execution_time_min_s": 1.6142054586671293,
+        "total_kernels": 1,
+        "depth_per_kernel": [
+          5
+        ],
+        "candidate_compile_time_per_kernel_s": [
+          10.746817463077605
+        ],
+        "executed_candidates_per_layer_per_kernel": [
+          [
+            23,
+            37,
+            30,
+            29,
+            23
+          ]
+        ],
+        "total_candidates_per_layer_per_kernel": [
+          [
+            24,
+            37,
+            30,
+            30,
+            29
+          ]
+        ],
+        "beam_kernels": [
+          {
+            "beam_width": 2,
+            "device": "METAL",
+            "kernel_name": "test",
+            "beam_search_time_s": 449.34399937465787,
+            "candidate_compile_time_s": 10.746817463077605,
+            "depth": 5,
+            "executed_candidates_total": 142,
+            "executed_candidates_per_layer": [
+              23,
+              37,
+              30,
+              29,
+              23
+            ],
+            "total_candidates_per_layer": [
+              24,
+              37,
+              30,
+              30,
+              29
+            ],
+            "applied_opts": [
+              "Opt(op=OptOps.TC, axis=0, arg=(-1, 0, 1))",
+              "Opt(op=OptOps.UPCAST, axis=0, arg=4)",
+              "Opt(op=OptOps.UPCAST, axis=1, arg=4)",
+              "Opt(op=OptOps.LOCAL, axis=0, arg=4)"
+            ]
+          }
+        ],
+        "n_exec": 10
+      }
+    }
+  }
+}

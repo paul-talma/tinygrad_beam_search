@@ -1,0 +1,170 @@
+{
+  "transformer_block": {
+    "0": {
+      "op": "transformer_block",
+      "beam": 0,
+      "compile_time_s": 1.1377478750000591,
+      "exec_time_s": 0.021709374501369894,
+      "exec_time_min_s": 0.021345833003579173,
+      "n_exec": 10
+    },
+    "1": {
+      "op": "transformer_block",
+      "beam": 1,
+      "compile_time_s": 29.29925508299857,
+      "exec_time_s": 0.02332766649851692,
+      "exec_time_min_s": 0.021806707998621278,
+      "n_exec": 10
+    },
+    "2": {
+      "op": "transformer_block",
+      "beam": 2,
+      "compile_time_s": 47.36094758299805,
+      "exec_time_s": 0.022814500000094995,
+      "exec_time_min_s": 0.02169083400076488,
+      "n_exec": 10
+    },
+    "4": {
+      "op": "transformer_block",
+      "beam": 4,
+      "compile_time_s": 68.91002875000049,
+      "exec_time_s": 0.02386410450162657,
+      "exec_time_min_s": 0.02206970800034469,
+      "n_exec": 10
+    },
+    "8": {
+      "op": "transformer_block",
+      "beam": 8,
+      "compile_time_s": 172.31952683299824,
+      "exec_time_s": 0.02347747900057584,
+      "exec_time_min_s": 0.022049499999411637,
+      "n_exec": 10
+    }
+  },
+  "llama_block": {
+    "0": {
+      "op": "llama_block",
+      "beam": 0,
+      "compile_time_s": 1.1347534580017964,
+      "exec_time_s": 0.03340062500137719,
+      "exec_time_min_s": 0.03308599999945727,
+      "n_exec": 10
+    },
+    "1": {
+      "op": "llama_block",
+      "beam": 1,
+      "compile_time_s": 50.15842520800288,
+      "exec_time_s": 0.03788820849877084,
+      "exec_time_min_s": 0.03767770900230971,
+      "n_exec": 10
+    },
+    "2": {
+      "op": "llama_block",
+      "beam": 2,
+      "compile_time_s": 75.57815970899901,
+      "exec_time_s": 0.030182417000105488,
+      "exec_time_min_s": 0.030010750000656117,
+      "n_exec": 10
+    },
+    "4": {
+      "op": "llama_block",
+      "beam": 4,
+      "compile_time_s": 165.38420637499803,
+      "exec_time_s": 0.029643021000083536,
+      "exec_time_min_s": 0.029525375000957865,
+      "n_exec": 10
+    },
+    "8": {
+      "op": "llama_block",
+      "beam": 8,
+      "compile_time_s": 304.4100713339976,
+      "exec_time_s": 0.03022979200068221,
+      "exec_time_min_s": 0.03004091600087122,
+      "n_exec": 10
+    }
+  },
+  "depthwise_sep_conv": {
+    "0": {
+      "op": "depthwise_sep_conv",
+      "beam": 0,
+      "compile_time_s": 0.2350231660020654,
+      "exec_time_s": 0.008943457998611848,
+      "exec_time_min_s": 0.008782291999523295,
+      "n_exec": 10
+    },
+    "1": {
+      "op": "depthwise_sep_conv",
+      "beam": 1,
+      "compile_time_s": 7.299512583998876,
+      "exec_time_s": 0.0076350625004124595,
+      "exec_time_min_s": 0.0075742499975604005,
+      "n_exec": 10
+    },
+    "2": {
+      "op": "depthwise_sep_conv",
+      "beam": 2,
+      "compile_time_s": 11.611442708002869,
+      "exec_time_s": 0.006985979000091902,
+      "exec_time_min_s": 0.006952249997993931,
+      "n_exec": 10
+    },
+    "4": {
+      "op": "depthwise_sep_conv",
+      "beam": 4,
+      "compile_time_s": 19.717882000000827,
+      "exec_time_s": 0.006990729500103043,
+      "exec_time_min_s": 0.00691874999756692,
+      "n_exec": 10
+    },
+    "8": {
+      "op": "depthwise_sep_conv",
+      "beam": 8,
+      "compile_time_s": 48.66283050000129,
+      "exec_time_s": 0.00695599999926344,
+      "exec_time_min_s": 0.006903917001181981,
+      "n_exec": 10
+    }
+  },
+  "causal_attn_512": {
+    "0": {
+      "op": "causal_attn_512",
+      "beam": 0,
+      "compile_time_s": 0.4498347089975141,
+      "exec_time_s": 0.00793970800077659,
+      "exec_time_min_s": 0.007892124998761574,
+      "n_exec": 10
+    },
+    "1": {
+      "op": "causal_attn_512",
+      "beam": 1,
+      "compile_time_s": 18.033864124998217,
+      "exec_time_s": 0.007926062500700937,
+      "exec_time_min_s": 0.007851665999623947,
+      "n_exec": 10
+    },
+    "2": {
+      "op": "causal_attn_512",
+      "beam": 2,
+      "compile_time_s": 21.94369233299949,
+      "exec_time_s": 0.007809478998751729,
+      "exec_time_min_s": 0.007746125000267057,
+      "n_exec": 10
+    },
+    "4": {
+      "op": "causal_attn_512",
+      "beam": 4,
+      "compile_time_s": 13.473685708999255,
+      "exec_time_s": 0.008481311999275931,
+      "exec_time_min_s": 0.008403166000789497,
+      "n_exec": 10
+    },
+    "8": {
+      "op": "causal_attn_512",
+      "beam": 8,
+      "compile_time_s": 100.12202779200015,
+      "exec_time_s": 0.007975417001944152,
+      "exec_time_min_s": 0.007866166000894736,
+      "n_exec": 10
+    }
+  }
+}
