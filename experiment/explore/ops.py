@@ -43,6 +43,18 @@ def _():
   b = Tensor.randn(2048, 2048, dtype=_f16).realize()
   return lambda: a @ b
 
+@_reg("matmul_4096")
+def _():
+  a = Tensor.randn(4096, 4096, dtype=_f16).realize()
+  b = Tensor.randn(4096, 4096, dtype=_f16).realize()
+  return lambda: a @ b
+
+@_reg("matmul_8192")
+def _():
+  a = Tensor.randn(8192, 8192, dtype=_f16).realize()
+  b = Tensor.randn(8192, 8192, dtype=_f16).realize()
+  return lambda: a @ b
+
 @_reg("matmul_rect")
 def _():
   a = Tensor.randn(512, 1024, dtype=_f16).realize()
