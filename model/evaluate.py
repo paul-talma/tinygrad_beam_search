@@ -107,7 +107,7 @@ def _ndcg_by_group(
       def dcg(order):
         total = 0.0
         for i, idx in enumerate(order[:k]):
-          total += (2 ** gl[idx] - 1) / log2(i + 2)
+          total += float(gl[idx]) / log2(i + 2)  # linear gain matches label_gain=[0,1,2,...]
         return total
 
       idcg = dcg(ideal_order)

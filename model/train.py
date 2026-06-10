@@ -53,14 +53,13 @@ def train(
     'objective': 'lambdarank',
     'metric': 'ndcg',
     'ndcg_eval_at': [5, 10, 20],
-    'label_gain': list(range(max_label + 1)),
+    'label_gain': list(range(max_label + 1)),  # linear gains to avoid 2^label overflow with large groups
     'num_leaves': num_leaves,
     'learning_rate': learning_rate,
     'min_child_samples': min_child_samples,
     'n_jobs': -1,
     'seed': seed,
     'verbose': -1,
-    'categorical_feature': cat_idx,
   }
 
   callbacks = []
@@ -104,7 +103,7 @@ def train(
 
 
 def _compute_ndcg(scores: np.ndarray, labels: np.ndarray, group_sizes: list[int], k_values: list[int]) -> dict[int, float]:
-  """Compute mean NDCG@K across all groups."""
+  """Compute mean NDCG@K across all groups using linear gains (matches label_gain=[0,1,2,...])."""
   from math import log2
 
   results: dict[int, float] = {}
@@ -116,21 +115,17 @@ def _compute_ndcg(scores: np.ndarray, labels: np.ndarray, group_sizes: list[int]
       grp_labels = labels[offset:offset + g]
       offset += g
 
-      # Sort by descending predicted score
       pred_order = np.argsort(-grp_scores)
       ideal_order = np.argsort(-grp_labels)
 
-      def dcg(order, top_k):
+      def dcg(order):
         total = 0.0
-        for i, idx in enumerate(order[:top_k]):
-          total += (2 ** grp_labels[idx] - 1) / log2(i + 2)
+        for i, idx in enumerate(order[:k]):
+          total += float(grp_labels[idx]) / log2(i + 2)  # linear gain = label value
         return total
 
-      idcg = dcg(ideal_order, k)
-      if idcg == 0:
-        ndcg_scores.append(1.0)
-      else:
-        ndcg_scores.append(dcg(pred_order, k) / idcg)
+      idcg = dcg(ideal_order)
+      ndcg_scores.append(1.0 if idcg == 0 else dcg(pred_order) / idcg)
 
     results[k] = float(np.mean(ndcg_scores))
   return results
