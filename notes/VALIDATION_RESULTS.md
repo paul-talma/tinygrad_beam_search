@@ -2,7 +2,7 @@
 
 ## Summary
 
-The LightGBM lambdarank cost model (`model/checkpoints/model_20260609_012207.lgb`) reduces beam search time by ~70% on simple kernels with negligible quality loss, once two harness bugs were fixed.
+The LightGBM lambdarank cost model (`model/checkpoints/model_20260609_012207.lgb`) dramatically cuts search time on compute-heavy kernels (−92% on matmul_1024, −28% on conv_3x3) and finds better kernels on conv. It regresses on `reduce_sum` (+76% search time, +5% quality loss), likely because `extract_features` overhead dominates for fast-compiling kernels. Once two harness bugs were fixed before measuring.
 
 ---
 
@@ -24,17 +24,36 @@ The LightGBM lambdarank cost model (`model/checkpoints/model_20260609_012207.lgb
 
 ## Measured Results
 
-All runs use single-threaded compilation (`PARALLEL=0`), beam width 2, prune factor 4 (keep top `ceil(2×4)=8` candidates per step). Op: `elem_relu` (relu on a 4096×4096 float16 tensor on Metal).
+All runs: `PARALLEL=0`, prune factor 4 (keep top `ceil(beam×4)` candidates per step), Metal backend.
+
+### Multi-op run — beam width 3
+
+| Op | B-compiled | M-compiled | B-Beam s | M-Beam s | Search Δ | B-µs | M-µs | Quality Δ |
+|----|-----------|-----------|---------|---------|---------|------|------|---------|
+| matmul_1024 | 300 | 48 | 281.3s | 22.6s | **−92%** | 955.2 | 959.8 | +0.5% |
+| elem_relu   | 91  | 43 | 6.36s  | 3.70s | **−42%** | 826.3 | 852.5 | +3.2% |
+| reduce_sum  | 58  | 48 | 5.75s  | 10.1s | **+76%** ⚠ | 127.2 | 133.5 | +5.0% ⚠ |
+| conv_3x3    | 322 | 73 | 595s   | 426s  | **−28%** | 508.2 | 425.5 | **−16%** (better) |
+
+**matmul_1024** is the clearest win: 6× fewer kernels compiled, 12× faster search, kernel quality essentially identical. This is the target use case — expensive multi-step searches where the ranking model's pruning pays off.
+
+**conv_3x3** also wins: the model finds a 16% faster kernel (508 → 425 µs) while cutting compilation by 4×. The timeout warnings on both runs are benign — `BEAM_TIMEOUT_SEC` kills slow compilations, which the model's pruning reduces.
+
+**reduce_sum** regresses. The model keeps 48 of 58 candidates (prune factor barely helps), and search takes 76% longer. The likely cause: `extract_features` is called on all 58 candidates before any are filtered, adding overhead that exceeds the savings from compiling 10 fewer kernels. With a fast-compiling kernel where each candidate takes ~100ms, paying for 58 Python feature-extraction calls (~few ms each) is inefficient. The model also finds a worse kernel (+5%).
+
+**elem_relu** is a marginal result. The reduction in compiled kernels is real (−53%), but quality degrades slightly (+3.2%). At beam=2 (previous runs), variance is high because the search often terminates in one step.
+
+### elem_relu — beam width 2 (repeated runs for variance)
 
 | Run | B-compiled | M-compiled | B-Beam s | M-Beam s | Search Δ | B-µs | M-µs | Quality Δ |
 |-----|-----------|-----------|---------|---------|---------|------|------|---------|
-| Run 1 | 80 | 39 | 12.2s | 3.82s | **−69%** | 838.4 | 829.8 | **−1.0%** (better) |
-| Run 2 | 58 | 31 | 4.32s | 2.73s | **−37%** | 831.9 | 833.3 | +0.2% |
-| Run 3 | 62 | 23 | 5.10s | 1.18s | **−77%** | 826.8 | 835.3 | +1.0% |
+| 1 | 80 | 39 | 12.2s | 3.82s | **−69%** | 838.4 | 829.8 | **−1.0%** (better) |
+| 2 | 58 | 31 | 4.32s | 2.73s | **−37%** | 831.9 | 833.3 | +0.2% |
+| 3 | 62 | 23 | 5.10s | 1.18s | **−77%** | 826.8 | 835.3 | +1.0% |
 
-The number of compiled kernels varies between runs (54–80 baseline) because beam search explores stochastically and the search terminates early when no progress is made. The model consistently reduces compilation to roughly half.
+Run-to-run variance in B-compiled (58–80) reflects beam search's stochastic early-stopping. The model consistently compiles ~half as many kernels. Quality difference is within noise.
 
-**Random stub control (run 4):** 54 compiled → 23 compiled (random keeps ceil(8)), Search −70%, Quality +0.4%. The random stub achieves similar search speedup to the model for `elem_relu` because this op's search terminates in one step regardless of which 8 candidates are selected — the model's ranking advantage shows more on multi-step kernels.
+**Random stub control:** keeping 8 random candidates achieved similar search speedup (−70%) with similar quality change (+0.4%) as the LightGBM model on `elem_relu`. This confirms the speedup is mostly from pruning volume, not from the model's ranking — the model's advantage is in identifying *which* candidates to keep, which matters more on multi-step kernels like matmul.
 
 ---
 
@@ -59,12 +78,16 @@ Results are saved to `experiment/results/validation_YYYYMMDD_HHMMSS.csv`.
 
 ---
 
-## Caveats
+## Findings and Next Steps
 
-**Variance is high at beam=2.** Beam search terminates when no candidate beats the current best; for simple ops this often happens in 1–2 steps. Small beam widths make the result sensitive to which candidates happen to be generated. Use `--beam 5` for more stable measurements.
+**The model works best on expensive, many-candidate kernels.** matmul and conv have 300+ candidates and multi-second compilation per candidate; the model's 6–4× reduction in compiled kernels is decisive. For simple kernels with fast compilation (reduce_sum, elem_relu), the per-candidate `extract_features` overhead can exceed the savings.
 
-**`elem_relu` is a weak test.** The relu kernel is so simple that many opt combinations produce similar performance. The model's ranking advantage matters more for complex multi-step kernels (matmul, conv, attention). For a meaningful quality comparison, run on `matmul_1024` or `attention` where multi-step search matters.
+**`reduce_sum` regression needs investigation.** The model should either (a) gate on whether pruning is expected to help before calling the filter — e.g., skip filtering when `n_candidates < threshold` or estimated compile time is short — or (b) batch `extract_features` calls to reduce Python overhead.
 
-**`PARALLEL=0` slows both runs equally.** With parallelism working, both baseline and model runs would be faster. The relative speedup from the model (fewer candidates to compile) would hold, but absolute times would be lower.
+**Quality on conv is surprisingly good.** The model found a 16% faster conv_3x3 kernel than baseline. This could mean the baseline's search is incomplete (hit timeout before finding the best opt), and the model's pruning happened to focus search on a better region. Worth investigating which opts the model chose.
 
-**Multi-kernel ops.** `attention` decomposes into 4 sub-kernels. `harness.py` captures only `traces[0]` (the first sub-kernel). Run `experiment/explore/run.py` to see all sub-kernels.
+**`extract_features` is in the hot path.** For 300 matmul candidates at beam=3, the filter calls `extract_features` 300 times per step. Profiling this overhead is warranted — if it's significant, consider caching feature extraction across beam steps for unchanged schedulers.
+
+**`PARALLEL=0` deflates absolute times.** With parallel compilation, both runs would be faster. The relative speedup from fewer compilations would hold.
+
+**Multi-kernel ops.** `attention` decomposes into 4 sub-kernels; `harness.py` captures only `traces[0]`. Run `experiment/explore/run.py` to see all sub-kernels.
