@@ -109,7 +109,10 @@ def _instrumented_beam_search(s, rawbufs, amt, allow_test_size=True, disable_cac
   beam: list[tuple] = [(s, float("inf"))]
   seen_libs: set = set()
 
-  default_parallel = multiprocessing.cpu_count() if s.ren.target.device in {"CUDA", "AMD", "NV", "METAL", "HIP"} else 0
+  # Spawned workers can't import tinygrad.codegen in this submodule setup due to a
+  # circular import chain (codegen → spec → schedule → realize → codegen).  Default
+  # to single-threaded compilation; set PARALLEL=N explicitly to override.
+  default_parallel = 0
   if _sm.beam_pool is None and (workers := getenv("PARALLEL", default_parallel)):
     _sm.beam_pool = multiprocessing.get_context("spawn").Pool(
       workers, _init_worker, (), getenv("BEAM_MAX_TASKS_PER_CHILD", 16)

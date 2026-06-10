@@ -50,6 +50,14 @@ def _run_op(name: str, op_fn: Callable, mode: str, beam_width: int) -> RunResult
 
   set_op_name(name)
   result = RunResult(op_name=name, mode=mode)
+
+  # Clear the in-process program cache so beam search runs fresh each time.
+  # to_program_cache maps unoptimized-AST key → compiled program; without clearing
+  # it, the second call for the same op returns the baseline-compiled program and
+  # beam search is never invoked.
+  import tinygrad.codegen as _codegen_mod
+  _codegen_mod.to_program_cache.clear()
+
   t_total = time.perf_counter()
   try:
     with Context(BEAM=beam_width, IGNORE_BEAM_CACHE=1):
