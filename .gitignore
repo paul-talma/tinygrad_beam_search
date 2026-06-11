@@ -1,5 +1,4 @@
 # collected runtime data — can be large
-data/
 
 # Python
 __pycache__/
