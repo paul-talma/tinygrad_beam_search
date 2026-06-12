@@ -1,10 +1,13 @@
-"""Measure conv_3x3 with a fixed tinygrad optimization sequence.
+"""Measure a kernel with a fixed tinygrad optimization sequence.
 
-Forced opts:
-  [('TC', 2, (-1, 2, 1)), ('UPCAST', 2, 4)]
+Forced opts are chosen per op to represent a canonical "good" kernel for
+that op type. They can be adjusted for different hardware by editing
+DEFAULT_FORCED_OPTS below.
 
-Example:
-  DEV=METAL python -m experiment.denoise.measure_forced_tc_conv3x3 --runs 20 --regenerate
+Examples:
+  DEV=METAL python -m experiment.denoise.measure_forced_tc_conv3x3
+  DEV=METAL python -m experiment.denoise.measure_forced_tc_conv3x3 --op matmul --runs 20 --regenerate
+  DEV=METAL python -m experiment.denoise.measure_forced_tc_conv3x3 --op softmax --beam 0
 """
 
 from __future__ import annotations
@@ -36,26 +39,29 @@ from tinygrad.helpers import Context
 from tinygrad.uop import Ops
 from tinygrad.uop.ops import KernelInfo
 
-FORCED_OPTS = (
-  Opt(OptOps.TC, 2, (-1, 2, 1)),
-  Opt(OptOps.UPCAST, 2, 4),
-)
+from experiment.denoise.measure_conv3x3 import ALL_OPS, make_op
+
+# Per-op canonical forced opts.  These represent a fixed, deterministic
+# optimization sequence so runtime variance reflects hardware noise only,
+# not beam search non-determinism.  Adjust for your device as needed.
+DEFAULT_FORCED_OPTS: dict[str, tuple[Opt, ...]] = {
+  "conv_3x3":       (Opt(OptOps.TC, 2, (-1, 2, 1)), Opt(OptOps.UPCAST, 2, 4)),
+  "conv_5x5":       (Opt(OptOps.TC, 2, (-1, 2, 1)), Opt(OptOps.UPCAST, 2, 4)),
+  "matmul":         (Opt(OptOps.TC, 0, (-1, 2, 1)),),
+  "matmul_batched": (Opt(OptOps.TC, 0, (-1, 2, 1)),),
+  "elementwise":    (Opt(OptOps.UPCAST, 0, 4),),
+  "reduce":         (Opt(OptOps.UPCAST, 0, 4),),
+  "softmax":        (Opt(OptOps.UPCAST, 0, 4),),
+}
 
 
-def make_conv_3x3(cachelevel: int):
-  with Context(CACHELEVEL=cachelevel):
-    x = Tensor.randn(4, 64, 32, 32, dtype=dtypes.float16).realize()
-    w = Tensor.randn(128, 64, 3, 3, dtype=dtypes.float16).realize()
-  return lambda: x.conv2d(w, padding=1)
-
-
-def force_opts(linear):
+def force_opts(linear, opts_to_apply):
   """Attach opts_to_apply to every kernel sink in the linear graph."""
   def visit(u):
     new_src = tuple(visit(s) for s in u.src)
     if u.op is Ops.SINK:
       info = u.arg if isinstance(u.arg, KernelInfo) else KernelInfo()
-      return u.replace(src=new_src, arg=replace(info, opts_to_apply=FORCED_OPTS))
+      return u.replace(src=new_src, arg=replace(info, opts_to_apply=opts_to_apply))
     return u.replace(src=new_src)
   return visit(linear)
 
@@ -88,7 +94,7 @@ def rawbufs_from_program(program) -> list[Buffer]:
   return [Buffer(device, p.max_numel(), p.dtype.base).ensure_allocated() for p in params]
 
 
-def run_once(op_fn, cachelevel: int) -> tuple[float, list[float], int, list[dict]]:
+def run_once(op_fn, forced_opts, cachelevel: int) -> tuple[float, list[float], int, list[dict]]:
   import tinygrad.codegen as codegen
   from tinygrad.codegen.opt.search import _time_program
 
@@ -96,7 +102,7 @@ def run_once(op_fn, cachelevel: int) -> tuple[float, list[float], int, list[dict
   GlobalCounters.reset()
   with Context(BEAM=0, CACHELEVEL=cachelevel):
     linear, var_vals = Tensor.linear_with_vars(op_fn())
-    compiled_linear = compile_linear(force_opts(linear), beam=0)
+    compiled_linear = compile_linear(force_opts(linear, forced_opts), beam=0)
     info = program_info(compiled_linear)
     programs = [u for u in compiled_linear.toposort() if u.op is Ops.PROGRAM]
     beam_style_times = []
@@ -107,17 +113,22 @@ def run_once(op_fn, cachelevel: int) -> tuple[float, list[float], int, list[dict
   return GlobalCounters.time_sum_s * 1e6, [x * 1e6 for x in beam_style_times], GlobalCounters.kernel_count, info
 
 
-def measure(runs: int, warmup: int, regenerate: bool, cachelevel: int) -> dict:
-  op_fn = None if regenerate else make_conv_3x3(cachelevel)
+def measure(op: str, runs: int, warmup: int, regenerate: bool, cachelevel: int) -> dict:
+  forced_opts = DEFAULT_FORCED_OPTS[op]
+  op_fn = None if regenerate else make_op(op, cachelevel)
+
+  def get_op_fn():
+    return make_op(op, cachelevel) if regenerate else op_fn
+
   for _ in range(warmup):
-    run_once(make_conv_3x3(cachelevel) if regenerate else op_fn, cachelevel)
+    run_once(get_op_fn(), forced_opts, cachelevel)
 
   times_us: list[float] = []
   beam_style_times_us: list[list[float]] = []
   kernel_counts: list[int] = []
   infos: list[list[dict]] = []
   for _ in range(runs):
-    t_us, beam_t_us, kernel_count, info = run_once(make_conv_3x3(cachelevel) if regenerate else op_fn, cachelevel)
+    t_us, beam_t_us, kernel_count, info = run_once(get_op_fn(), forced_opts, cachelevel)
     times_us.append(t_us)
     beam_style_times_us.append(beam_t_us)
     kernel_counts.append(kernel_count)
@@ -126,8 +137,8 @@ def measure(runs: int, warmup: int, regenerate: bool, cachelevel: int) -> dict:
   beam_style_mins_us = [min(x) for x in beam_style_times_us]
 
   return {
-    "op": "conv_3x3",
-    "forced_opts": normalized_opts(FORCED_OPTS),
+    "op": op,
+    "forced_opts": normalized_opts(forced_opts),
     "runs": runs,
     "warmup": warmup,
     "regenerate": regenerate,
@@ -149,7 +160,8 @@ def measure(runs: int, warmup: int, regenerate: bool, cachelevel: int) -> dict:
 
 
 def main() -> None:
-  parser = argparse.ArgumentParser(description="Measure conv_3x3 with forced TC + UPCAST opts.")
+  parser = argparse.ArgumentParser(description="Measure a kernel with forced optimization opts.")
+  parser.add_argument("--op", choices=ALL_OPS, default="conv_3x3", help="Kernel benchmark to measure.")
   parser.add_argument("--runs", type=int, default=10, help="Number of measured runs.")
   parser.add_argument("--warmup", type=int, default=3, help="Number of warmup runs.")
   parser.add_argument("--regenerate", action="store_true", help="Regenerate and realize fresh inputs for every run.")
@@ -158,12 +170,12 @@ def main() -> None:
   parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
   args = parser.parse_args()
 
-  result = measure(args.runs, args.warmup, args.regenerate, args.cachelevel)
+  result = measure(args.op, args.runs, args.warmup, args.regenerate, args.cachelevel)
   if args.json:
     print(json.dumps(result))
     return
 
-  print("conv_3x3 forced opts")
+  print(f"{args.op} forced opts")
   print(f"forced_opts: {result['forced_opts']}")
   print(f"runs: {args.runs}, warmup: {args.warmup}, regenerate: {args.regenerate}")
   print(f"median kernels/run: {result['kernel_count_median']}")
