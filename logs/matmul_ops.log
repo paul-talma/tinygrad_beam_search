@@ -1,0 +1,21 @@
+matmul kernel execution time (BEAM=3)
+runs: 10, warmup: 3, regenerate: False, median kernels/run: 1.0
+unique generated kernels: 10
+kernel signatures: {'3e795bdf6d1f0d86': 1, '545bc330fd232c54': 1, '9b30aed4ab345851': 1, 'b3d56f92bee08de0': 1, 'bf56af0a23748d58': 1, 'c5e264e92f47a7e4': 1, 'df559b85be54afbf': 1, 'e50d2cbe3c94e424': 1, 'f752068c15e10b81': 1, 'fef36b94e9076c4b': 1}
+unique applied opt sequences: 9
+applied opts per run:
+  run 1: [[('TC', 0, (-1, 0, 1)), ('UPCAST', 1, 4), ('LOCAL', 0, 4), ('UPCAST', 3, 2)]]
+  run 2: [[('TC', 0, (-1, 0, 1)), ('UPCAST', 1, 4), ('UPCAST', 0, 2), ('LOCAL', 0, 8)]]
+  run 3: [[('TC', 0, (-1, 2, 1)), ('UPCAST', 1, 4), ('LOCAL', 0, 4), ('UPCAST', 0, 2)]]
+  run 4: [[('TC', 0, (-1, 0, 1)), ('UPCAST', 1, 4), ('SWAP', 0, 1), ('LOCAL', 0, 8)]]
+  run 5: [[('TC', 0, (-1, 2, 1)), ('UPCAST', 1, 4), ('LOCAL', 0, 4), ('UPCAST', 0, 2)]]
+  run 6: [[('TC', 0, (-1, 2, 1)), ('UPCAST', 1, 4), ('UPCAST', 0, 4)]]
+  run 7: [[('TC', 0, (-1, 2, 1)), ('UPCAST', 1, 4), ('UPCAST', 0, 4), ('LOCAL', 1, 2)]]
+  run 8: [[('TC', 0, (-1, 0, 1)), ('UPCAST', 1, 4), ('SWAP', 0, 1), ('LOCAL', 1, 2), ('LOCAL', 1, 2), ('UPCAST', 1, 2)]]
+  run 9: [[('TC', 0, (-1, 0, 1)), ('UPCAST', 1, 4), ('LOCAL', 0, 2)]]
+  run 10: [[('TC', 0, (-1, 2, 1)), ('UPCAST', 1, 2), ('UPCAST', 0, 2), ('UPCAST', 1, 4)]]
+median: 563.250 us
+min:    261.000 us
+max:    585.250 us
+mean:   507.217 us
+all:    564.750, 276.417, 261.000, 585.250, 566.500, 565.750, 561.750, 561.000, 580.625, 549.125

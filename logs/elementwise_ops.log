@@ -1,0 +1,21 @@
+elementwise kernel execution time (BEAM=0)
+runs: 10, warmup: 3, regenerate: False, median kernels/run: 1.0
+unique generated kernels: 10
+kernel signatures: {'1e5a412e047780a7': 1, '21547cd08e4414c6': 1, '4f4f06286828d81d': 1, '6eb716d2ffbf1ed8': 1, '7d810729f70bf138': 1, '9ca16b265ad2c3ee': 1, 'aec4f79ca6816d49': 1, 'af84b01a90b410d3': 1, 'b63041593c7dd222': 1, 'fc982fd32baafda7': 1}
+unique applied opt sequences: 1
+applied opts per run:
+  run 1: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 2: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 3: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 4: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 5: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 6: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 7: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 8: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 9: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+  run 10: [[('UPCAST', 0, 4), ('LOCAL', 0, 32)]]
+median: 14037.500 us
+min:    2795.125 us
+max:    31475.917 us
+mean:   15275.942 us
+all:    15686.583, 24158.250, 13332.125, 2795.125, 23126.625, 14591.750, 31475.917, 7286.750, 6823.042, 13483.250
