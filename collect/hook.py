@@ -216,7 +216,7 @@ def _make_collecting_beam_search(collector: DataCollector):
                             var_vals,
                             rawbufs,
                             early_stop=beam[0][1] * 3 if len(beam) else 1.0,
-                            allow_test_size=allow_test_size,
+                            allow_test_size=False,
                             clear_l2=hasattr(dev, 'invalidate_caches'),
                             dev_timeout=getenv('BEAM_DEV_TIMEOUT', 1),
                         )
