@@ -40,6 +40,12 @@ def _attention(B: int, heads: int, seq: int, head_dim: int, dtype=None):
   return attn
 
 
+def _softmax(N: int, M: int, dtype=None):
+  Tensor, dtype = _tinygrad(dtype)
+  x = Tensor.randn(N, M, dtype=dtype).realize()
+  return lambda: x.softmax(-1)
+
+
 def _elementwise(N: int, M: int, dtype=None):
   Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, M, dtype=dtype).realize()
@@ -64,6 +70,13 @@ def _reduction(N: int, M: int, dtype=None):
   return lambda: x.sum()
 
 
+def _reduction_rows(N: int, M: int, dtype=None):
+  """Row-wise reduction (sum over last axis) — different loop structure than global sum."""
+  Tensor, dtype = _tinygrad(dtype)
+  x = Tensor.randn(N, M, dtype=dtype).realize()
+  return lambda: x.sum(axis=-1)
+
+
 def _layer_norm(N: int, D: int, dtype=None):
   Tensor, dtype = _tinygrad(dtype)
   x = Tensor.randn(N, D, dtype=dtype).realize()
@@ -85,6 +98,7 @@ def _f32():
 
 ALL_OPS: dict[str, OpFactory] = {
   # --- matmul ---
+  "matmul_512":            lambda: _matmul(512, 512, 512),
   "matmul_1024":           lambda: _matmul(1024, 1024, 1024),
   "matmul_2048":           lambda: _matmul(2048, 2048, 2048),
   "matmul_4096":           lambda: _matmul(4096, 4096, 4096),
@@ -93,37 +107,63 @@ ALL_OPS: dict[str, OpFactory] = {
   "matmul_4096_f32":       lambda: _matmul(4096, 4096, 4096, dtype=_f32()),
   "matmul_ffn_4096_16384": lambda: _matmul(2048, 4096, 16384),
   "matmul_ffn_16384_4096": lambda: _matmul(2048, 16384, 4096),
+  "matmul_rect_512_2048":  lambda: _matmul(512, 512, 2048),   # encoder FFN
+  "matmul_rect_64_4096":   lambda: _matmul(64, 2048, 4096),   # decode step
 
   # --- convolution ---
-  "conv_small":      lambda: _conv2d(1, 32, 32, 32, 64, 3, 3),
-  "conv_medium":     lambda: _conv2d(1, 64, 64, 64, 128, 3, 3),
-  "conv_large":      lambda: _conv2d(1, 128, 128, 128, 256, 3, 3),
-  "conv_xlarge":     lambda: _conv2d(1, 256, 128, 128, 512, 3, 3),
-  "conv_1x1_large":  lambda: _conv2d(1, 256, 56, 56, 256, 1, 1),
-  "conv_strided":    lambda: _conv2d(1, 64, 56, 56, 128, 3, 3, stride=2),
-  "conv_5x5":        lambda: _conv2d(1, 32, 32, 32, 64, 5, 5, padding=2),
-  "conv_3x3_b4":     lambda: _conv2d(4, 64, 32, 32, 128, 3, 3, padding=1),
-  "conv_5x5_b4":     lambda: _conv2d(4, 32, 32, 32, 64, 5, 5, padding=2),
+  "conv_small":        lambda: _conv2d(1, 32, 32, 32, 64, 3, 3),
+  "conv_medium":       lambda: _conv2d(1, 64, 64, 64, 128, 3, 3),
+  "conv_medium_b4":    lambda: _conv2d(4, 64, 64, 64, 128, 3, 3, padding=1),
+  "conv_medium_b8":    lambda: _conv2d(8, 64, 64, 64, 128, 3, 3, padding=1),
+  "conv_large":        lambda: _conv2d(1, 128, 128, 128, 256, 3, 3),
+  "conv_large_b4":     lambda: _conv2d(4, 128, 64, 64, 256, 3, 3, padding=1),
+  "conv_xlarge":       lambda: _conv2d(1, 256, 128, 128, 512, 3, 3),
+  "conv_1x1_large":    lambda: _conv2d(1, 256, 56, 56, 256, 1, 1),
+  "conv_strided":      lambda: _conv2d(1, 64, 56, 56, 128, 3, 3, stride=2),
+  "conv_strided_b4":   lambda: _conv2d(4, 64, 56, 56, 128, 3, 3, stride=2),
+  "conv_5x5":          lambda: _conv2d(1, 32, 32, 32, 64, 5, 5, padding=2),
+  "conv_5x5_b8":       lambda: _conv2d(8, 32, 32, 32, 64, 5, 5, padding=2),
+  "conv_7x7":          lambda: _conv2d(1, 3, 224, 224, 64, 7, 7, stride=2, padding=3),
+  "conv_3x3_b4":       lambda: _conv2d(4, 64, 32, 32, 128, 3, 3, padding=1),
+  "conv_5x5_b4":       lambda: _conv2d(4, 32, 32, 32, 64, 5, 5, padding=2),
 
   # --- attention ---
-  "attn_256":         lambda: _attention(1, 8, 256, 64),
-  "attn_512":         lambda: _attention(1, 8, 512, 64),
-  "attn_b2_t128":     lambda: _attention(2, 8, 128, 64),
-  "attn_b1_t64":      lambda: _attention(1, 8, 64, 64),
-  "attn_b1_t512":     lambda: _attention(1, 8, 512, 64),
+  "attn_256":          lambda: _attention(1, 8, 256, 64),
+  "attn_512":          lambda: _attention(1, 8, 512, 64),
+  "attn_1024":         lambda: _attention(1, 8, 1024, 64),
+  "attn_b2_t128":      lambda: _attention(2, 8, 128, 64),
+  "attn_b4_t256":      lambda: _attention(4, 8, 256, 64),
+  "attn_b8_t128":      lambda: _attention(8, 8, 128, 64),
+  "attn_b1_t64":       lambda: _attention(1, 8, 64, 64),
+  "attn_b1_t512":      lambda: _attention(1, 8, 512, 64),
 
   # --- elementwise ---
-  "relu_large":       lambda: _elementwise(4096, 4096),
-  "gelu_large":       lambda: _elementwise_gelu(4096, 4096),
-  "silu_large":       lambda: _elementwise_silu(4096, 4096),
+  "relu_small":        lambda: _elementwise(256, 256),
+  "relu_medium":       lambda: _elementwise(1024, 1024),
+  "relu_large":        lambda: _elementwise(4096, 4096),
+  "gelu_medium":       lambda: _elementwise_gelu(1024, 1024),
+  "gelu_large":        lambda: _elementwise_gelu(4096, 4096),
+  "silu_medium":       lambda: _elementwise_silu(1024, 1024),
+  "silu_large":        lambda: _elementwise_silu(4096, 4096),
+
+  # --- softmax ---
+  "softmax_medium":    lambda: _softmax(1024, 1024),
+  "softmax_large":     lambda: _softmax(4096, 4096),
 
   # --- reduction / norm ---
-  "reduce_large":        lambda: _reduction(4096, 4096),
-  "reduce_large_f32":    lambda: _reduction(4096, 4096, dtype=_f32()),
-  "layernorm_512":       lambda: _layer_norm(512, 1024),
-  "layernorm_512_f32":   lambda: _layer_norm(512, 1024, dtype=_f32()),
-  "rmsnorm_large":       lambda: _rms_norm(2048, 4096),
-  "rmsnorm_large_f32":   lambda: _rms_norm(2048, 4096, dtype=_f32()),
+  "reduce_small":         lambda: _reduction(256, 256),
+  "reduce_medium":        lambda: _reduction(1024, 1024),
+  "reduce_large":         lambda: _reduction(4096, 4096),
+  "reduce_large_f32":     lambda: _reduction(4096, 4096, dtype=_f32()),
+  "reduce_rows_medium":   lambda: _reduction_rows(1024, 1024),
+  "reduce_rows_large":    lambda: _reduction_rows(4096, 4096),
+  "layernorm_256":        lambda: _layer_norm(256, 512),
+  "layernorm_512":        lambda: _layer_norm(512, 1024),
+  "layernorm_512_f32":    lambda: _layer_norm(512, 1024, dtype=_f32()),
+  "layernorm_1024":       lambda: _layer_norm(1024, 2048),
+  "rmsnorm_small":        lambda: _rms_norm(512, 1024),
+  "rmsnorm_large":        lambda: _rms_norm(2048, 4096),
+  "rmsnorm_large_f32":    lambda: _rms_norm(2048, 4096, dtype=_f32()),
 }
 
 

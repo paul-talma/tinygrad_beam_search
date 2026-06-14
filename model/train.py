@@ -20,10 +20,12 @@ from model.encode import FEATURE_NAMES, CATEGORICAL_FEATURES
 def train(
   data_path: str,
   out_dir: str,
-  n_estimators: int = 300,
+  n_estimators: int = 500,
   num_leaves: int = 64,
   learning_rate: float = 0.05,
-  min_child_samples: int = 5,
+  min_child_samples: int = 20,
+  reg_lambda: float = 1.0,
+  early_stopping_rounds: int = 50,
   val_fraction: float = 0.1,
   seed: int = 42,
   verbose: bool = True,
@@ -43,9 +45,11 @@ def train(
 
   train_ds = build_lgb_dataset(train_recs)
 
-  # Compute max group size for label_gain (must cover 0..max_label)
+  # Compute max label across train+val so label_gain covers every group in both splits.
   _, y_train, _ = build_arrays(train_recs)
-  max_label = int(y_train.max()) if len(y_train) > 0 else 10
+  _, y_val_check, _ = build_arrays(val_recs) if val_recs else (None, np.array([]), None)
+  all_labels = np.concatenate([y_train, y_val_check]) if len(y_val_check) > 0 else y_train
+  max_label = int(all_labels.max()) if len(all_labels) > 0 else 10
 
   cat_idx = [FEATURE_NAMES.index(c) for c in CATEGORICAL_FEATURES]
 
@@ -57,6 +61,7 @@ def train(
     'num_leaves': num_leaves,
     'learning_rate': learning_rate,
     'min_child_samples': min_child_samples,
+    'reg_lambda': reg_lambda,
     'n_jobs': -1,
     'seed': seed,
     'verbose': -1,
@@ -73,6 +78,8 @@ def train(
 
   if verbose:
     callbacks.append(lgb.log_evaluation(period=50))
+  if val_recs and early_stopping_rounds > 0:
+    callbacks.append(lgb.early_stopping(stopping_rounds=early_stopping_rounds, verbose=verbose))
 
   booster = lgb.train(
     params,
@@ -133,12 +140,15 @@ def _compute_ndcg(scores: np.ndarray, labels: np.ndarray, group_sizes: list[int]
 
 def main() -> None:
   parser = argparse.ArgumentParser(description='Train LightGBM lambdarank cost model')
-  parser.add_argument('--data',   default='data/train.jsonl', help='Training data JSONL path')
-  parser.add_argument('--out',    default='model/checkpoints/', help='Checkpoint output directory')
-  parser.add_argument('--trees',  type=int, default=300, help='Number of boosting rounds')
-  parser.add_argument('--leaves', type=int, default=64, help='LightGBM num_leaves')
-  parser.add_argument('--lr',     type=float, default=0.05, help='Learning rate')
-  parser.add_argument('--val',    type=float, default=0.1, help='Validation split fraction')
+  parser.add_argument('--data',              default='data/train.jsonl', help='Training data JSONL path')
+  parser.add_argument('--out',               default='model/checkpoints/', help='Checkpoint output directory')
+  parser.add_argument('--trees',             type=int,   default=500,  help='Max boosting rounds')
+  parser.add_argument('--leaves',            type=int,   default=64,   help='LightGBM num_leaves')
+  parser.add_argument('--lr',                type=float, default=0.05, help='Learning rate')
+  parser.add_argument('--min-child-samples', type=int,   default=20,   help='Min samples per leaf')
+  parser.add_argument('--reg-lambda',        type=float, default=1.0,  help='L2 regularization')
+  parser.add_argument('--early-stopping',    type=int,   default=50,   help='Early stopping rounds (0 to disable)')
+  parser.add_argument('--val',               type=float, default=0.1,  help='Validation split fraction')
   args = parser.parse_args()
 
   train(
@@ -147,6 +157,9 @@ def main() -> None:
     n_estimators=args.trees,
     num_leaves=args.leaves,
     learning_rate=args.lr,
+    min_child_samples=args.min_child_samples,
+    reg_lambda=args.reg_lambda,
+    early_stopping_rounds=args.early_stopping,
     val_fraction=args.val,
   )
 

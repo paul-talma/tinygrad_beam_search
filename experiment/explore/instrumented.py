@@ -34,7 +34,9 @@ class SearchTrace:
   steps: list[StepRecord] = field(default_factory=list)
   total_beam_time_s: float = 0.0
   baseline_time_us: float = math.inf   # heuristic-only kernel time
-  best_time_us: float = math.inf
+  best_time_us: float = math.inf       # best time found during search (may be estimated)
+  true_time_us: float = math.inf       # winner re-timed at allow_test_size=False
+  kernel_id: str = ""                  # AST key of the unoptimized kernel
   best_opts: list = field(default_factory=list)  # list[Opt]
   n_kernels_compiled: int = 0          # total across all steps
   n_kernels_timed: int = 0             # total across all steps
@@ -47,6 +49,7 @@ class SearchTrace:
 _pending_traces: list[SearchTrace] = []
 _current_op_name: str = "unknown"
 _candidate_filter: Callable | None = None  # (list[Scheduler]) -> list[Scheduler]
+_override_allow_test_size: bool | None = None  # None = use caller's value
 
 # Deferred references to tinygrad module objects — filled in by install()
 _search_mod = None
@@ -61,6 +64,15 @@ def set_candidate_filter(fn: "Callable | None") -> None:
   """Install a per-step candidate filter (or None to clear)."""
   global _candidate_filter
   _candidate_filter = fn
+
+def set_timing_mode(allow_test_size: "bool | None") -> None:
+  """Override allow_test_size for all subsequent beam searches.
+
+  Pass False to force real-size timing (model-driven runs).
+  Pass None to restore caller-controlled behaviour (default).
+  """
+  global _override_allow_test_size
+  _override_allow_test_size = allow_test_size
 
 def pop_traces() -> list[SearchTrace]:
   """Return and clear all traces collected since last call."""
@@ -88,9 +100,15 @@ def _instrumented_beam_search(s, rawbufs, amt, allow_test_size=True, disable_cac
   if disable_cache is None:
     disable_cache = IGNORE_BEAM_CACHE.value
 
+  # Apply module-level timing override (set by harness for model-driven runs).
+  if _override_allow_test_size is not None:
+    allow_test_size = _override_allow_test_size
+
   global _pending_traces, _current_op_name, _candidate_filter
 
   trace = SearchTrace(op_name=_current_op_name)
+  # Capture kernel_id from the unoptimized AST key (same formula as collect/hook.py).
+  trace.kernel_id = s.ast.key.hex() if isinstance(s.ast.key, (bytes, bytearray)) else str(s.ast.key)
   _pending_traces.append(trace)
 
   # --- baseline: heuristic-only kernel timing ---
@@ -207,6 +225,22 @@ def _instrumented_beam_search(s, rawbufs, amt, allow_test_size=True, disable_cac
   trace.n_kernels_compiled = sum(r.candidates_compiled for r in trace.steps)
   trace.n_kernels_timed = sum(r.candidates_timed for r in trace.steps)
 
+  # Re-time the winning kernel at allow_test_size=False for a fair quality comparison.
+  # This is a single extra compile+time call after the search completes.
+  if beam[0][1] != float("inf"):
+    try:
+      best_ast = beam[0][0].get_optimized_ast(name_override="test")
+      best_prg = to_program(best_ast, s.ren)
+      tms_true = _time_program(
+        best_prg, var_vals, rawbufs,
+        allow_test_size=False,
+        clear_l2=hasattr(dev, "invalidate_caches"),
+        dev_timeout=getenv("BEAM_DEV_TIMEOUT", 1),
+      )
+      trace.true_time_us = min(tms_true) * 1e6
+    except Exception:
+      trace.true_time_us = trace.best_time_us  # fallback: use search-time estimate
+
   if CACHELEVEL >= 1 and not disable_cache:
     key = {"ast": s.ast.key, "amt": amt, "allow_test_size": allow_test_size,
            "device": s.ren.target.device, "suffix": s.ren.suffix}
@@ -223,13 +257,17 @@ def install() -> None:
   """Patch tinygrad's beam_search with the instrumented version."""
   global _search_mod, _original_beam_search
   import tinygrad.codegen.opt.search as sm
+  import tinygrad.codegen.opt.postrange as pr
   _search_mod = sm
   if _original_beam_search is None:
     _original_beam_search = sm.beam_search
   sm.beam_search = _instrumented_beam_search
+  pr.beam_search = _instrumented_beam_search  # patch postrange's reference too
 
 def uninstall() -> None:
   """Restore the original beam_search."""
   global _search_mod, _original_beam_search
   if _search_mod is not None and _original_beam_search is not None:
     _search_mod.beam_search = _original_beam_search
+    import tinygrad.codegen.opt.postrange as pr
+    pr.beam_search = _original_beam_search

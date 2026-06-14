@@ -31,6 +31,7 @@ def main():
   parser.add_argument("--ops",  nargs="*", help="Specific op names (default: all)")
   parser.add_argument("--beam", type=int, default=5, help="Beam width (default: 5)")
   parser.add_argument("--out",  default="data/v2/train.jsonl", help="Output JSONL path")
+  parser.add_argument("--resume-after", metavar="OP", help="Skip all ops up to and including this op name")
   args = parser.parse_args()
 
   import tinygrad  # noqa: F401
@@ -45,6 +46,15 @@ def main():
     print(f"Unknown ops: {unknown}", file=sys.stderr)
     print(f"Available: {sorted(ALL_OPS)}", file=sys.stderr)
     sys.exit(1)
+
+  if args.resume_after:
+    if args.resume_after not in op_names:
+      print(f"--resume-after op {args.resume_after!r} not in op list", file=sys.stderr)
+      sys.exit(1)
+    cut = op_names.index(args.resume_after) + 1
+    skipped = op_names[:cut]
+    op_names = op_names[cut:]
+    print(f"Skipping {len(skipped)} ops (through {args.resume_after!r}), {len(op_names)} remaining.")
 
   os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
   collector = DataCollector(args.out)

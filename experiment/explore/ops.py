@@ -112,3 +112,29 @@ def _():
     scores = (q @ k.transpose(-2, -1)) * scale
     return scores.softmax(-1) @ v
   return _attn
+
+# ---------------------------------------------------------------------------
+# Unseen kernels — shapes not present in collect/ops.py training data
+# ---------------------------------------------------------------------------
+
+@_reg("matmul_3072")
+def _():
+  # (3072, 3072, 3072) — not in collect/ops.py (which has 512, 1024, 2048, 4096, 8192, 16384)
+  a = Tensor.randn(3072, 3072, dtype=_f16).realize()
+  b = Tensor.randn(3072, 3072, dtype=_f16).realize()
+  return lambda: a @ b
+
+@_reg("layernorm_large")
+def _():
+  # (1024, 4096) — collect has layernorm_1024=(1024, 2048) only; D=4096 is novel
+  x = Tensor.randn(1024, 4096, dtype=_f16).realize()
+  w = Tensor.randn(4096, dtype=_f16).realize()
+  b = Tensor.randn(4096, dtype=_f16).realize()
+  return lambda: x.layernorm().mul(w).add(b)
+
+@_reg("gelu_fused")
+def _():
+  # Fused (x+y).gelu() — fused elementwise not in collect/ops.py at all
+  x = Tensor.randn(4096, 4096, dtype=_f16).realize()
+  y = Tensor.randn(4096, 4096, dtype=_f16).realize()
+  return lambda: (x + y).gelu()

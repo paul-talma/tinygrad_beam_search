@@ -51,16 +51,25 @@ FEATURE_NAMES: list[str] = (
   ['has_reduce', 'dont_use_locals'] +
   # scalar ints (4)
   ['shape_len', 'upcasted', 'group_for_reduces', 'n_bufs'] +
-  # log-transformed size products (5)
-  ['log_global_size', 'log_local_size', 'log_reduce_size', 'log_warp_size', 'log_upcast_size'] +
+  # log-transformed size products (4) — log_warp_size removed (near-constant on CUDA)
+  ['log_global_size', 'log_local_size', 'log_reduce_size', 'log_upcast_size'] +
   # log-transformed counts (4)
   ['log_n_mulacc', 'log_n_transcendental', 'log_n_where', 'log_n_cast'] +
   # log-transformed post-compile features (2)
   ['log_compiled_uops', 'log_flop_estimate'] +
-  # log-transformed buffer aggregates (3)
-  ['log_buf_total_bytes', 'log_buf_max_bytes', 'log_buf_mean_bytes'] +
+  # log-transformed buffer aggregates (2) — log_buf_mean_bytes removed (derivable)
+  ['log_buf_total_bytes', 'log_buf_max_bytes'] +
   # device constants (2)
   ['log_shared_max', 'log_global_max'] +
+  # Ansor-inspired derived features (8)
+  # arithmetic intensity: FLOPs per byte (roofline position)
+  ['log_arithmetic_intensity'] +
+  # work per output element (reduction depth relative to output)
+  ['log_reduce_per_output'] +
+  # axis type counts (loop structure — Ansor's spatial/reduce depth)
+  ['n_global_axes', 'n_local_axes', 'n_reduce_axes'] +
+  # stride pattern counts from stride_matrix (Ansor's reuse / coalescing features)
+  ['n_zero_stride_pairs', 'n_unit_stride_pairs', 'n_large_stride_pairs'] +
   # full_shape — log2(x+1) per slot, MAX_AXES slots (8)
   [f'shape_{i}' for i in range(MAX_AXES)] +
   # axis_types — ordinal per slot, -1 = padding (8)
@@ -72,7 +81,7 @@ FEATURE_NAMES: list[str] = (
 # Column names of categorical features (LightGBM uses these to enable native cat handling)
 CATEGORICAL_FEATURES: list[str] = ['dtype', 'device', 'reduce_op', 'reduce_dtype']
 
-assert len(FEATURE_NAMES) == 4 + 2 + 4 + 5 + 4 + 2 + 3 + 2 + MAX_AXES + MAX_AXES + MAX_BUFS * MAX_AXES
+assert len(FEATURE_NAMES) == 4 + 2 + 4 + 4 + 4 + 2 + 2 + 2 + 8 + MAX_AXES + MAX_AXES + MAX_BUFS * MAX_AXES
 
 
 # ---------------------------------------------------------------------------
@@ -115,8 +124,8 @@ def encode_features(feat: dict, compiled_uops: int = 0, flop_estimate: int = 0) 
   buf_bytes: list[int] = feat.get('buf_bytes', [])
   out[i] = float(len(buf_bytes)); i += 1
 
-  # -- log size products --
-  for key in ('global_size', 'local_size', 'reduce_size', 'warp_size', 'upcast_size'):
+  # -- log size products (warp_size removed) --
+  for key in ('global_size', 'local_size', 'reduce_size', 'upcast_size'):
     out[i] = _safe_log2(feat.get(key, 1)); i += 1
 
   # -- log counts --
@@ -127,17 +136,42 @@ def encode_features(feat: dict, compiled_uops: int = 0, flop_estimate: int = 0) 
   out[i] = _safe_log1p(compiled_uops); i += 1
   out[i] = _safe_log1p(flop_estimate); i += 1
 
-  # -- buffer aggregates --
+  # -- buffer aggregates (mean removed) --
   if buf_bytes:
-    out[i] = _safe_log1p(sum(buf_bytes)); i += 1
+    buf_total = sum(buf_bytes)
+    out[i] = _safe_log1p(buf_total); i += 1
     out[i] = _safe_log1p(max(buf_bytes)); i += 1
-    out[i] = _safe_log1p(sum(buf_bytes) / len(buf_bytes)); i += 1
   else:
-    i += 3
+    buf_total = 0
+    i += 2
 
   # -- device constants --
   out[i] = _safe_log2(feat.get('shared_max', 0)); i += 1
   out[i] = _safe_log2(feat.get('global_max', 0)); i += 1
+
+  # -- Ansor-inspired derived features --
+  # arithmetic intensity: FLOPs per byte (log1p to handle zero flop_estimate at inference)
+  out[i] = _safe_log1p(flop_estimate / max(1, buf_total)); i += 1
+  # work per output: how many reduce iterations per output element
+  global_size = max(1, feat.get('global_size', 1))
+  reduce_size = max(1, feat.get('reduce_size', 1))
+  out[i] = _safe_log2(reduce_size / global_size); i += 1
+  # axis type counts
+  axis_types: list[str] = feat.get('axis_types', [])
+  out[i] = float(axis_types.count('GLOBAL')); i += 1
+  out[i] = float(axis_types.count('LOCAL')); i += 1
+  out[i] = float(axis_types.count('REDUCE')); i += 1
+  # stride pattern counts from stride_matrix
+  stride_matrix: list[list[int]] = feat.get('stride_matrix', [])
+  n_zero = n_unit = n_large = 0
+  for row in stride_matrix:
+    for s in row:
+      if s == 0:   n_zero  += 1
+      elif s == 1: n_unit  += 1
+      else:        n_large += 1
+  out[i] = float(n_zero);  i += 1
+  out[i] = float(n_unit);  i += 1
+  out[i] = float(n_large); i += 1
 
   # -- full_shape (MAX_AXES slots) --
   full_shape: list = feat.get('full_shape', [])
@@ -148,7 +182,6 @@ def encode_features(feat: dict, compiled_uops: int = 0, flop_estimate: int = 0) 
     i += 1
 
   # -- axis_types (MAX_AXES slots, ordinal, -1 = padding) --
-  axis_types: list[str] = feat.get('axis_types', [])
   for slot in range(MAX_AXES):
     if slot < len(axis_types):
       out[i] = float(_AXIS_TYPE_IDX.get(axis_types[slot], len(AXIS_TYPE_VOCAB) - 1))
@@ -157,7 +190,6 @@ def encode_features(feat: dict, compiled_uops: int = 0, flop_estimate: int = 0) 
     i += 1
 
   # -- stride_matrix (MAX_BUFS × MAX_AXES, log1p) --
-  stride_matrix: list[list[int]] = feat.get('stride_matrix', [])
   for b in range(MAX_BUFS):
     row = stride_matrix[b] if b < len(stride_matrix) else []
     for a in range(MAX_AXES):

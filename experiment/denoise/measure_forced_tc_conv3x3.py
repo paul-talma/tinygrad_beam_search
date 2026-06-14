@@ -47,7 +47,7 @@ from experiment.denoise.measure_conv3x3 import ALL_OPS, make_op
 DEFAULT_FORCED_OPTS: dict[str, tuple[Opt, ...]] = {
   "conv_3x3":       (Opt(OptOps.TC, 2, (-1, 2, 1)), Opt(OptOps.UPCAST, 2, 4)),
   "conv_5x5":       (Opt(OptOps.TC, 2, (-1, 2, 1)), Opt(OptOps.UPCAST, 2, 4)),
-  "matmul":         (Opt(OptOps.TC, 0, (-1, 2, 1)),),
+  "matmul":         (Opt(OptOps.UPCAST, 0, 4),),
   "matmul_batched": (Opt(OptOps.TC, 0, (-1, 2, 1)),),
   "elementwise":    (Opt(OptOps.UPCAST, 0, 4),),
   "reduce":         (Opt(OptOps.UPCAST, 0, 4),),
@@ -107,7 +107,7 @@ def run_once(op_fn, forced_opts, cachelevel: int) -> tuple[float, list[float], i
     programs = [u for u in compiled_linear.toposort() if u.op is Ops.PROGRAM]
     beam_style_times = []
     for program in programs:
-      beam_style_times.extend(_time_program(program, var_vals, rawbufs_from_program(program)))
+      beam_style_times.extend(_time_program(program, var_vals, rawbufs_from_program(program), allow_test_size=False))
     run_linear(compiled_linear, var_vals, wait=True, jit=True)
   Device[Device.DEFAULT].synchronize()
   return GlobalCounters.time_sum_s * 1e6, [x * 1e6 for x in beam_style_times], GlobalCounters.kernel_count, info
