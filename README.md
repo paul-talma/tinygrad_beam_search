@@ -98,9 +98,6 @@ The report prints one row per op with eight timing columns and three quality-del
 | B→E Δ | Kernel quality change: Model-Est vs Baseline |
 | F vs E | Kernel quality: Model-Full vs Model-Est |
 
-Rows marked ★ are kernels not present in training data (unseen). Summary lines at the bottom
-report mean search-time and kernel-quality deltas over all ops / unseen ops.
-
 ## Key environment variables
 
 | Variable | Effect |
